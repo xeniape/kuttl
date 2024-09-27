@@ -49,10 +49,27 @@ func IsSubset(expected, actual interface{}) error {
 
 	switch reflect.TypeOf(expected).Kind() {
 	case reflect.Slice:
-		if reflect.ValueOf(expected).Len() != reflect.ValueOf(actual).Len() {
+		if reflect.ValueOf(expected).Len() > reflect.ValueOf(actual).Len() {
 			return &SubsetError{
 				message: fmt.Sprintf("slice length mismatch: %d != %d", reflect.ValueOf(expected).Len(), reflect.ValueOf(actual).Len()),
 			}
+		} else if reflect.ValueOf(expected).Len() < reflect.ValueOf(actual).Len() {
+			for i := 0; i < reflect.ValueOf(expected).Len(); i++ {
+				found := false
+				for j := 0; j < reflect.ValueOf(actual).Len(); j++ {
+					if err := IsSubset(reflect.ValueOf(expected).Index(i).Interface(), reflect.ValueOf(actual).Index(j).Interface()); err == nil {
+						found = true
+						break
+					}
+				}
+
+				if !found {
+					return &SubsetError{
+						message: fmt.Sprintf("expected slice element not found: %v", reflect.ValueOf(expected).Index(i).Interface()),
+					}
+				}
+			}
+			return nil
 		}
 
 		for i := 0; i < reflect.ValueOf(expected).Len(); i++ {
